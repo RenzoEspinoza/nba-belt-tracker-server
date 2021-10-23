@@ -1,3 +1,4 @@
+const db = require('../utils/knex')
 //define schema for matchup
 
 class Matchup{
@@ -10,12 +11,17 @@ class Matchup{
         this.season = season;
     }
 
-    findMatchupByDate(date) {
+    static findMatchupByDate(date) {
         //query DB for Matchup with matching 'date' field
         //return new Matchup instance
+        return db.select('*').from('matchups').whereRaw('?? = ?::date', ['date', date]).then(data => {
+            return data;
+        });
     }
 
-    findMatchupById(id) {
+    static
+
+    static findMatchupById(id) {
         //query DB for Matchup with matching 'id' field
         //return new Matchup instance
     }

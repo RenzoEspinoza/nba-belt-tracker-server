@@ -3,8 +3,6 @@ const app = express();
 const matchupRouter = require('./controllers/matchup');
 const middleware = require('./utils/middleware');
 
-//connect to PostgreSQL DB
-
 app.use(express.json());
 app.use(middleware.requestLogger);
 

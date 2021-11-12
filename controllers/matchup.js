@@ -8,17 +8,23 @@ matchupRouter.get('/date/:date', async (req, res) => {
     res.json(matchup);
 })
 
-matchupRouter.get('/id/:id', (req, res) => {
+matchupRouter.get('/id/:id', async (req, res) => {
     const id = req.params.id;
     console.log(id);
-    const matchup = Matchup.findMatchupById(id);
+    const matchup = await Matchup.findMatchupById(id);
     console.log(matchup);
     res.json(matchup);
 })
 
-matchupRouter.get('/next-match/:date', (req, res) => {
-
+matchupRouter.post('/test', async (req, res) => {
+    // used for manually adding matchups to DB for now until the frontend is finished
+    const {startTime} = req.body;
+    const pastMatchup = await Matchup.findByDate(startTime);
+    await pastMatchup.getResults();
+    await pastMatchup.dbUpdate();
+    await pastMatchup.dbDeleteUnneededGames();
+    const nextMatch = await pastMatchup.findUpcomingGame();
+    await nextMatch.dbInsert();
 })
-// /next-match/:date route
 
 module.exports = matchupRouter;

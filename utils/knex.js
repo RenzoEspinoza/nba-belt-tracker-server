@@ -1,3 +1,9 @@
+const types = require('pg').types;
+const TIMESTAMPTZ_OID = 1184;
+const TIMESTAMP_OID = 1114;
+types.setTypeParser(TIMESTAMPTZ_OID, val => val);
+types.setTypeParser(TIMESTAMP_OID, val => val);
+
 module.exports = require('knex')({
     client: 'pg',
     connection: {

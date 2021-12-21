@@ -1,25 +1,26 @@
 const knex = require('../utils/knex');
 const got = require('got');
+const Team = require('./team')
 
 class Matchup{
-    constructor(id, startTime, champ, challenger, streak, season, champScore, challScore, winner){
+    constructor(id, startTime, champ, challenger, streak, season, winner, venue){
         this.id = id;
         this.startTime = startTime;
         this.champ = champ;
         this.challenger = challenger;
         this.streak = streak;
         this.season = season;
-        this.champScore = champScore;
-        this.challScore = challScore;
         this.winner = winner;
+        this.venue = venue;
     }
 
     static findByDate(date) {
-        return knex.first().from('matchups').whereRaw('??::date = ?', ['start_time_utc', date])
+        return knex('matchups').first().whereRaw('??::date = ?', ['start_time_utc', date])
             .then(data => {
-                const matchup = new Matchup(data.id, data.start_time_utc, data.champ,
-                    data.challenger, data.streak, data.season,
-                    data.champ_score, data.challenger_score, data.winner)
+                const champ = new Team(data.champ_id, data.champ_score);
+                const challenger = new Team(data.challenger_id, data.challenger_score);
+                const matchup = new Matchup(data.id, data.start_time_utc, champ, challenger, data.streak, data.season,
+                    data.winner, data.venue)
                     console.log('matchup on ' + date);
                     console.log(matchup);
                 return matchup;
@@ -27,28 +28,43 @@ class Matchup{
     }
 
     static findLatest(){
-        return knex.first().from('matchups').orderBy('start_time_utc', 'desc')
+        return knex('matchups').first().orderBy('start_time_utc', 'desc')
         .then(data => {
-            const matchup = new Matchup(data.id, data.start_time_utc, data.champ,
-                data.challenger, data.streak, data.season,
-                data.champ_score, data.challenger_score, data.winner)
+            const champ = new Team(data.champ_id, data.champ_score);
+            const challenger = new Team(data.challenger_id, data.challenger_score)
+            const matchup = new Matchup(data.id, data.start_time_utc,champ, challenger,
+                data.streak, data.season, data.winner, data.venue)
+            console.log('latest matchup: ', matchup);
             return matchup;
         })
     }
 
     findUpcomingGame(){
-        const newChamp = this.winner;
-        let newChallenger;
-        const streak = (this.champ === newChamp) ? this.streak + 1 : 1 ;
-        return knex.first('start_time_utc', 'home_team_id', 'away_team_id', 'season')
-            .from('schedule').whereRaw('? in (home_team_id, away_team_id)', [newChamp])
+        const newChampId = this.winner;
+        let newChallengerId;
+        let matchup;
+        const streak = (this.champ === newChampId) ? this.streak + 1 : 1 ;
+        return knex.transaction(trx =>{
+            return knex('schedule').transacting(trx)
+            .first('start_time_utc', 'home_team_id', 'away_team_id', 'season')
+            .whereRaw('? in (home_team_id, away_team_id)', [newChampId])
             .orderBy('start_time_utc', 'asc')
             .then(data => {
-                newChallenger = (newChamp === data.home_team_id) ? data.away_team_id : data.home_team_id;
-                const matchup = new Matchup(undefined, data.start_time_utc, newChamp,
-                    newChallenger, streak, data.season);
-                console.log('upcoming game:', matchup);
-                return matchup;
+                newChallengerId = (newChampId === data.home_team_id) ? data.away_team_id : data.home_team_id;
+                matchup = new Matchup(undefined, data.start_time_utc, new Team(newChampId),
+                    new Team(newChallengerId), streak, data.season);
+                return knex('teams')
+                .where('id','=', data.home_team_id)
+                .returning('arena')
+                .then(result =>{
+                    console.log('first query result: ', data);
+                    console.log('second query result: ', result);
+                    matchup.venue = result[0].arena;
+                    return matchup;
+                })
+            })
+            .then(trx.commit)
+            .catch(trx.rollback);
         });
     }
 
@@ -57,7 +73,7 @@ class Matchup{
         date = new Date(date);
         date.setHours(date.getHours() - 25); // BDL api's start times are off by 24/25 hours
         let results;
-        let apiUrl = `https://balldontlie.io/api/v1/games?team_ids[]=${this.champ}&start_date=${date.toISOString()}&per_page=1`;
+        let apiUrl = `https://balldontlie.io/api/v1/games?team_ids[]=${this.champ.id}&start_date=${date.toISOString()}&per_page=1`;
         try {
             results = JSON.parse((await got(apiUrl)).body);
             results = results.data[0];
@@ -65,28 +81,29 @@ class Matchup{
             console.error(error);
         }
         console.log('BDL api results:', results);
-        if(results.home_team.id === this.champ){
-            this.champScore = results.home_team_score;
-            this.challScore = results.visitor_team_score;
+        if(results.home_team.id === this.champ.id){
+            this.champ.score = results.home_team_score;
+            this.challenger.score = results.visitor_team_score;
         }
         else{
-            this.challScore = results.home_team_score;
-            this.champScore = results.visitor_team_score;
+            this.challenger.score = results.home_team_score;
+            this.champ.score = results.visitor_team_score;
         }
-        this.winner = (this.champScore > this.challScore) ? this.champ : this.challenger;
+        this.winner = (this.champ.score > this.challenger.score) ? this.champ.id : this.challenger.id;
     }
 
     dbInsert(){
         return knex('matchups').returning('*')
             .insert({
                 start_time_utc: this.startTime,
-                champ: this.champ,
-                challenger: this.challenger,
+                champ_id: this.champ.id,
+                challenger_id: this.challenger.id,
                 streak: this.streak,
                 season: this.season,
-                champ_score: this.champScore,
-                challenger_score: this.challScore,
-                winner: this.winner
+                champ_score: this.champ.score,
+                challenger_score: this.challenger.score,
+                winner: this.winner,
+                venue: this.venue
             })
             .then(response =>{
                 console.log('dbInsert response:', response);
@@ -94,11 +111,11 @@ class Matchup{
             })
     }
 
-    dbUpdate(){
+    dbUpdateMatchResults(){
         return knex('matchups').where('id', '=', this.id).returning('*')
             .update({
-                champ_score: this.champScore,
-                challenger_score: this.challScore,
+                champ_score: this.champ.score,
+                challenger_score: this.challenger.score,
                 winner: this.winner
             })
             .then(response =>{

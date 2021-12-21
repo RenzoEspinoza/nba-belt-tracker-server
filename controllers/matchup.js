@@ -18,10 +18,9 @@ matchupRouter.get('/id/:id', async (req, res) => {
 
 matchupRouter.post('/test', async (req, res) => {
     // used for manually adding matchups to DB for now until the frontend is finished
-    const {startTime} = req.body;
-    const pastMatchup = await Matchup.findByDate(startTime);
+    const pastMatchup = await Matchup.findLatest();
     await pastMatchup.getResults();
-    await pastMatchup.dbUpdate();
+    await pastMatchup.dbUpdateMatchResults();
     await pastMatchup.dbDeleteUnneededGames();
     const nextMatch = await pastMatchup.findUpcomingGame();
     await nextMatch.dbInsert();

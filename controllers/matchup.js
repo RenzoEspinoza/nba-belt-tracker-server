@@ -16,14 +16,13 @@ matchupRouter.get('/id/:id', async (req, res) => {
     res.json(matchup);
 })
 
-matchupRouter.post('/test', async (req, res) => {
-    // used for manually adding matchups to DB for now until the frontend is finished
-    const pastMatchup = await Matchup.findLatest();
-    await pastMatchup.getResults();
-    await pastMatchup.dbUpdateMatchResults();
-    await pastMatchup.dbDeleteUnneededGames();
-    const nextMatch = await pastMatchup.findUpcomingGame();
-    await nextMatch.dbInsert();
+matchupRouter.get('/latest', async (req, res) => {
+    const lastMatchups = await Matchup.findLastTwoMatchups();
+    for await (const matchup of lastMatchups){
+        await matchup.champ.getTeamName();
+        await matchup.challenger.getTeamName();
+    }
+    res.json(lastMatchups)
 })
 
 module.exports = matchupRouter;

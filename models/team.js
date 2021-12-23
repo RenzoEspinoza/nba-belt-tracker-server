@@ -1,3 +1,5 @@
+const knex = require('../utils/knex');
+
 class Team{
     constructor(id, score, name){
         this.id = id;
@@ -5,8 +7,12 @@ class Team{
         this.name = name;
     }
 
-    async setTeamName(){
-
+    async getTeamName(){
+        return knex('teams').first('name').where('id', '=', this.id)
+        .then(data => {
+            this.name = data.name;
+            console.log(this.id, this.name);
+        })
     }
 }
 

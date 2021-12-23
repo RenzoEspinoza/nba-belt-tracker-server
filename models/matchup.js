@@ -31,11 +31,26 @@ class Matchup{
         return knex('matchups').first().orderBy('start_time_utc', 'desc')
         .then(data => {
             const champ = new Team(data.champ_id, data.champ_score);
-            const challenger = new Team(data.challenger_id, data.challenger_score)
+            const challenger = new Team(data.challenger_id, data.challenger_score);
             const matchup = new Matchup(data.id, data.start_time_utc,champ, challenger,
-                data.streak, data.season, data.winner, data.venue)
+                data.streak, data.season, data.winner, data.venue);
             console.log('latest matchup: ', matchup);
             return matchup;
+        })
+    }
+
+    static findLastTwoMatchups(){
+        return knex('matchups').limit(2).orderBy('start_time_utc', 'desc')
+        .then(data => {
+            let matchups = new Array(2);
+            for (let i = 0; i < 2; i++) {
+                let champ = new Team(data[i].champ_id, data[i].champ_score);
+                let challenger = new Team(data[i].challenger_id, data[i].challenger_score);
+                matchups[i] = new Matchup(data[i].id, data[i].start_time_utc,champ, challenger,
+                    data[i].streak, data[i].season, data[i].winner, data[i].venue);
+            }
+            console.log('last two matchups: ', matchups);
+            return matchups;
         })
     }
 
@@ -43,7 +58,7 @@ class Matchup{
         const newChampId = this.winner;
         let newChallengerId;
         let matchup;
-        const streak = (this.champ === newChampId) ? this.streak + 1 : 1 ;
+        const streak = (this.champ.id === newChampId) ? this.streak + 1 : 1 ;
         return knex.transaction(trx =>{
             return knex('schedule').transacting(trx)
             .first('start_time_utc', 'home_team_id', 'away_team_id', 'season')

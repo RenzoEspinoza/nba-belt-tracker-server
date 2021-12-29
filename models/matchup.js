@@ -14,19 +14,6 @@ class Matchup{
         this.venue = venue;
     }
 
-    static findByDate(date) {
-        return knex('matchups').first().whereRaw('??::date = ?', ['start_time_utc', date])
-            .then(data => {
-                const champ = new Team(data.champ_id, data.champ_score);
-                const challenger = new Team(data.challenger_id, data.challenger_score);
-                const matchup = new Matchup(data.id, data.start_time_utc, champ, challenger, data.streak, data.season,
-                    data.winner, data.venue)
-                    console.log('matchup on ' + date);
-                    console.log(matchup);
-                return matchup;
-        });
-    }
-
     static findLatest(){
         return knex('matchups').first().orderBy('start_time_utc', 'desc')
         .then(data => {
@@ -40,9 +27,9 @@ class Matchup{
     }
 
     static findLastTwoMatchups(){
+        let matchups = new Array(2);
         return knex('matchups').limit(2).orderBy('start_time_utc', 'desc')
         .then(data => {
-            let matchups = new Array(2);
             for (let i = 0; i < 2; i++) {
                 let champ = new Team(data[i].champ_id, data[i].champ_score);
                 let challenger = new Team(data[i].challenger_id, data[i].challenger_score);
@@ -96,6 +83,7 @@ class Matchup{
             console.error(error);
         }
         console.log('BDL api results:', results);
+        if(results.status != 'Final') throw Error;
         if(results.home_team.id === this.champ.id){
             this.champ.score = results.home_team_score;
             this.challenger.score = results.visitor_team_score;
@@ -122,7 +110,7 @@ class Matchup{
             })
             .then(response =>{
                 console.log('dbInsert response:', response);
-                return response;
+                return response[0].id;
             })
     }
 
@@ -145,11 +133,6 @@ class Matchup{
             console.log('deleted games:', data);
             return data;
         })
-    }
-
-    static findMatchupById(id) {
-        //query DB for Matchup with matching 'id' field
-        //return new Matchup instance
     }
 }
 module.exports = Matchup;

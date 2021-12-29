@@ -1,28 +1,50 @@
 const matchupRouter = require('express').Router();
 const Matchup = require('../models/matchup');
+const schedule = require('node-schedule');
 
-matchupRouter.get('/date/:date', async (req, res) => {
-    const date = req.params.date;
-    console.log(date);
-    const matchup = await Matchup.findMatchupByDate(date);
-    res.json(matchup);
-})
-
-matchupRouter.get('/id/:id', async (req, res) => {
-    const id = req.params.id;
-    console.log(id);
-    const matchup = await Matchup.findMatchupById(id);
-    console.log(matchup);
-    res.json(matchup);
-})
+let lastTwoMatchups;
+(async () => {
+    lastTwoMatchups = await getLastTwoMatchups();
+    const endTime = new Date(lastTwoMatchups[0].startTime+'Z').addHours(3);
+    console.log('Server will update matchups at:', endTime.toString());
+    const job = schedule.scheduleJob(endTime, async () =>{
+        try {
+            await updateMatchups();
+        } catch (error) {
+            job.reschedule(endTime.addHours(1));
+        }
+        let newTime = new Date(lastTwoMatchups[0].startTime+'Z').addHours(3);
+        console.log('Server will update matchups at new time:', newTime.toString())
+        job.reschedule(newTime);
+    });
+})();
 
 matchupRouter.get('/latest', async (req, res) => {
-    const lastMatchups = await Matchup.findLastTwoMatchups();
-    for await (const matchup of lastMatchups){
+    res.json(lastTwoMatchups);
+})
+
+async function getLastTwoMatchups(){
+    let result = await Matchup.findLastTwoMatchups();
+    for await (const matchup of result){
         await matchup.champ.getTeamName();
         await matchup.challenger.getTeamName();
     }
-    res.json(lastMatchups)
-})
+    return result;
+}
+
+async function updateMatchups(){
+    await lastTwoMatchups[0].getResults();
+    await lastTwoMatchups[0].dbUpdateMatchResults();
+    await lastTwoMatchups[0].dbDeleteUnneededGames();
+    const nextMatch = await lastTwoMatchups[0].findUpcomingGame();
+    nextMatch.id = await nextMatch.dbInsert();
+    lastTwoMatchups.pop();
+    lastTwoMatchups.unshift(nextMatch);
+}
+
+Date.prototype.addHours = function(h) {
+    this.setTime(this.getTime() + (h*60*60*1000));
+    return this;
+}
 
 module.exports = matchupRouter;

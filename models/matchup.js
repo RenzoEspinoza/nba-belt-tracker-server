@@ -41,6 +41,35 @@ class Matchup{
         })
     }
 
+    static getLatestSeason(){
+        return knex('matchups').first('season').orderBy('start_time_utc', 'desc')
+        .then(data => {
+            console.log('latest season:', data);
+            return data;
+        })
+    }
+
+    static getMatchups(season){
+        return knex('matchups').orderBy('start_time_utc', 'asc').where('season', '=', season)
+        .then(data => {
+            console.log('All matchups during season:', season);
+            console.log(data);
+            return {[season] : data};
+        })
+    }
+
+    static seasonsBefore(season){
+        return knex('matchups').orderBy('start_time_utc', 'asc').whereNot('season', '=', season)
+        .then(data => {
+            const splitBySeason = data.reduce(function(container, i) {
+                if (!container[i['season']]) { container[i['season']] = []; }
+                container[i['season']].push(i);
+                return container;
+              }, {});  
+            return splitBySeason;
+        })
+    }
+
     findUpcomingGame(){
         const newChampId = this.winner;
         let newChallengerId;

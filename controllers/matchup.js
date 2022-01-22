@@ -11,6 +11,7 @@ let lastTwoMatchups;
         try {
             await updateMatchups();
         } catch (error) {
+            console.log(error);
             job.reschedule(endTime.addHours(1));
         }
         let newTime = new Date(lastTwoMatchups[0].startTime+'Z').addHours(3);

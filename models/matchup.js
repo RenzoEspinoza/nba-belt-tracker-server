@@ -53,18 +53,30 @@ class Matchup{
         return knex('matchups').orderBy('start_time_utc', 'asc').where('season', '=', season)
         .then(data => {
             console.log('All matchups during season:', season);
-            console.log(data);
-            return {[season] : data};
+            let matchups = new Array();
+            for (let i = 0; i < data.length-1; i++) {
+                let champ = new Team(data[i].champ_id, data[i].champ_score);
+                let challenger = new Team(data[i].challenger_id, data[i].challenger_score);
+                matchups.push(new Matchup(data[i].id, data[i].start_time_utc,champ, challenger,
+                    data[i].streak, data[i].season, data[i].winner));
+            }
+            return {[season] : matchups};
         })
     }
 
     static seasonsBefore(season){
         return knex('matchups').orderBy('start_time_utc', 'asc').whereNot('season', '=', season)
         .then(data => {
-            const splitBySeason = data.reduce(function(container, i) {
-                if (!container[i['season']]) { container[i['season']] = []; }
-                container[i['season']].push(i);
-                return container;
+            const splitBySeason = data.reduce((memo, i) => {
+                if (!memo[i['season']]) { 
+                    memo[i['season']] = [];
+                }
+                let champ = new Team(i.champ_id, i.champ_score);
+                let challenger = new Team(i.challenger_id, i.challenger_score);
+                let matchup = new Matchup(i.id, i.start_time_utc,champ, challenger,
+                    i.streak, i.season, i.winner);
+                memo[i['season']].push(matchup);
+                return memo;
               }, {});  
             return splitBySeason;
         })
@@ -102,7 +114,7 @@ class Matchup{
     async getResults(){
         let date = this.startTime + 'Z';
         date = new Date(date);
-        date.setHours(date.getHours() - 25); // BDL api's start times are off by 24/25 hours
+        date.setHours(date.getHours() - 27); // BDL api's start times are off by 24-27 hours
         let results;
         let apiUrl = `https://balldontlie.io/api/v1/games?team_ids[]=${this.champ.id}&start_date=${date.toISOString()}&per_page=1`;
         try {

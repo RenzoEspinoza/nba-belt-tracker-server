@@ -1,4 +1,4 @@
-const config = require('./utils/config');
+const config = require('./config');
 const types = require('pg').types;
 const TIMESTAMPTZ_OID = 1184;
 const TIMESTAMP_OID = 1114;

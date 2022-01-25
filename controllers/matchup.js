@@ -1,6 +1,8 @@
 const matchupRouter = require('express').Router();
 const Matchup = require('../models/matchup');
 const schedule = require('node-schedule');
+const config = require('../utils/config');
+const got = require('got');
 
 let lastTwoMatchups;
 (async () => {
@@ -14,6 +16,8 @@ let lastTwoMatchups;
             console.log(error);
             job.reschedule(endTime.addHours(1));
         }
+        const buildTrigger = JSON.parse((await got(config.DEPLOY_HOOK)).body);
+        console.log(buildTrigger);
         let newTime = new Date(lastTwoMatchups[0].startTime+'Z').addHours(3);
         console.log('Server will update matchups at new time:', newTime.toString())
         job.reschedule(newTime);

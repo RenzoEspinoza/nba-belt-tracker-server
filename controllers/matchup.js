@@ -27,9 +27,4 @@ matchupRouter.get('/before/:season', async (req, res) =>{
     res.json(history);
 })
 
-Date.prototype.addHours = function(h) {
-    this.setTime(this.getTime() + (h*60*60*1000));
-    return this;
-}
-
 module.exports = matchupRouter;

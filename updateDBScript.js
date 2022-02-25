@@ -3,6 +3,8 @@ const config = require('./utils/config');
 const got = require('got');
 
 (async () => {
+    console.log('script started');
+    console.log(config);
     const latestMatchup = await Matchup.findLatest();
     const endTime = new Date(latestMatchup.startTime+'Z').addHours(3);
     if(Date.now() < endTime) return;

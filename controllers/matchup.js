@@ -1,6 +1,5 @@
 const matchupRouter = require('express').Router();
 const Matchup = require('../models/matchup');
-const schedule = require('node-schedule');
 
 matchupRouter.get('/latest', async (req, res) => {
     let lastTwoMatchups = await Matchup.findLastTwoMatchups();

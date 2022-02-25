@@ -12,7 +12,7 @@ console.log(config);
     await latestMatchup.getResults();
     await latestMatchup.dbUpdateMatchResults();
     await latestMatchup.dbDeleteUnneededGames();
-    const nextMatch = await lastTwoMatchups[0].findUpcomingGame();
+    const nextMatch = await latestMatchup.findUpcomingGame();
     nextMatch.id = await nextMatch.dbInsert();
     const buildTrigger = JSON.parse((await got(config.DEPLOY_HOOK)).body);
     console.log('build trigger:', buildTrigger);

@@ -2,9 +2,11 @@ const Matchup = require('./models/matchup');
 const config = require('./utils/config');
 const got = require('got');
 
+console.log('script started');
+console.log(config);
+
 (async () => {
-    console.log('script started');
-    console.log(config);
+    
     const latestMatchup = await Matchup.findLatest();
     const endTime = new Date(latestMatchup.startTime+'Z').addHours(3);
     if(Date.now() < endTime) return;

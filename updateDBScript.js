@@ -1,5 +1,5 @@
 const Matchup = require('./models/matchup');
-const config = require('../utils/config');
+const config = require('./utils/config');
 const got = require('got');
 
 (async () => {

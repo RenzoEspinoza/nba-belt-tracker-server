@@ -17,3 +17,8 @@ console.log(config);
     const buildTrigger = JSON.parse((await got(config.DEPLOY_HOOK)).body);
     console.log('build trigger:', buildTrigger);
 })();
+
+Date.prototype.addHours = function(h) {
+    this.setTime(this.getTime() + (h*60*60*1000));
+    return this;
+}

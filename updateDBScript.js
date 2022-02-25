@@ -6,7 +6,6 @@ console.log('script started');
 console.log(config);
 
 (async () => {
-    
     const latestMatchup = await Matchup.findLatest();
     const endTime = new Date(latestMatchup.startTime+'Z').addHours(3);
     if(Date.now() < endTime) return;
@@ -17,4 +16,4 @@ console.log(config);
     nextMatch.id = await nextMatch.dbInsert();
     const buildTrigger = JSON.parse((await got(config.DEPLOY_HOOK)).body);
     console.log('build trigger:', buildTrigger);
-})
+})();

@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
+    "updateDB": "node updateDBScript.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Renzo Espinoza",
@@ -15,7 +16,6 @@
     "express": "^4.17.1",
     "got": "^9.6.0",
     "knex": "^0.95.11",
-    "node-schedule": "^2.1.0",
     "pg": "^8.7.1"
   },
   "devDependencies": {

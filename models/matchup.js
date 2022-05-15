@@ -54,7 +54,7 @@ class Matchup{
         .then(data => {
             console.log('All matchups during season:', season);
             let matchups = new Array();
-            for (let i = 0; i < data.length-1; i++) {
+            for (let i = 0; i < data.length; i++) {
                 let champ = new Team(data[i].champ_id, data[i].champ_score);
                 let challenger = new Team(data[i].challenger_id, data[i].challenger_score);
                 matchups.push(new Matchup(data[i].id, data[i].start_time_utc,champ, challenger,
@@ -124,7 +124,7 @@ class Matchup{
             console.error(error);
         }
         console.log('BDL api results:', results);
-        if(results.status != 'Final') throw Error;
+        if(results.status != 'Final') throw new Error('Status of game is not Final\n Status:', results.status);
         if(results.home_team.id === this.champ.id){
             this.champ.score = results.home_team_score;
             this.challenger.score = results.visitor_team_score;
